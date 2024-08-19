@@ -37,14 +37,14 @@ export const DataTableCell: FC<DataTableCellProps> = ({ property }) => {
       ) : null
     case 'multi_select':
       return (
-        <div className="flex flex-row gap-1 overflow-auto">
+        <div className="flex flex-row flex-wrap gap-1.5 overflow-auto">
           {property.multi_select.map((select) => (
             <span
               key={select.id}
               style={{
                 backgroundColor: `${notionColors[select.color] || notionColors.default}${theme === 'light' ? '40' : ''}`,
               }}
-              className="mr-1 text-nowrap rounded-md px-1.5 py-1"
+              className="text-nowrap rounded-md px-1.5 py-1"
             >
               {select.name}
             </span>

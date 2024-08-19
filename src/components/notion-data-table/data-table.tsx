@@ -3,6 +3,25 @@
 import type { DataTableProperties } from '@/lib/notion/types'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { restrictToHorizontalAxis } from '@dnd-kit/modifiers'
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+  type Cell,
   type ColumnDef,
   type Header,
   type Table as ReactTable,
@@ -10,7 +29,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { type FC, memo, useMemo } from 'react'
+import { type CSSProperties, type FC, memo, useMemo, useState } from 'react'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import {
   Table,
@@ -41,6 +60,7 @@ function getTableColumns(
   return [titleProperty[0], ...Object.keys(propertiesWithoutTitle)].map(
     (key) =>
       ({
+        id: properties[key].id,
         header: key,
         cell: ({ row: { original } }) => {
           return <DataTableCell property={original[key]} />
@@ -53,6 +73,9 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
   const properties = useDataTableStore((state) => state.properties)
 
   const columns = getTableColumns(properties)
+  const [columnOrder, setColumnOrder] = useState<string[]>(() =>
+    columns.map((c) => c.id!),
+  )
 
   const table = useReactTable({
     columns,
@@ -66,7 +89,30 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
     // column sizing
     enableColumnResizing: true,
     columnResizeMode: 'onChange',
+    // column ordering
+    state: {
+      columnOrder,
+    },
+    onColumnOrderChange: setColumnOrder,
   })
+
+  // reorder columns after drag & drop
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (active && over && active.id !== over.id) {
+      setColumnOrder((columnOrder) => {
+        const oldIndex = columnOrder.indexOf(active.id as string)
+        const newIndex = columnOrder.indexOf(over.id as string)
+        return arrayMove(columnOrder, oldIndex, newIndex) //this is just a splice util
+      })
+    }
+  }
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {}),
+    useSensor(TouchSensor, {}),
+    useSensor(KeyboardSensor, {}),
+  )
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
   const columnSizeVars = useMemo(() => {
@@ -81,45 +127,166 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
   }, [table.getState().columnSizingInfo, table.getState().columnSizing])
 
   return (
-    <ScrollArea className="w-full">
-      <div className="px-4 sm:px-8 md:px-24">
-        <Table
-          style={{ ...columnSizeVars, width: table.getTotalSize() }}
-          className="border"
-        >
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  return (
-                    <TableHead
-                      key={header.id}
-                      className="relative text-nowrap border-r"
-                    >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
+    <DndContext
+      collisionDetection={closestCenter}
+      modifiers={[restrictToHorizontalAxis]}
+      onDragEnd={handleDragEnd}
+      sensors={sensors}
+    >
+      <ScrollArea className="w-full">
+        <div className="px-4 sm:px-8 md:px-24">
+          <Table
+            style={{ ...columnSizeVars, width: table.getTotalSize() }}
+            className="mx-1 border"
+          >
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  <SortableContext
+                    items={columnOrder}
+                    strategy={horizontalListSortingStrategy}
+                  >
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <DraggableTableHeader key={header.id} header={header} />
+                      )
+                      // return (
+                      //   <TableHead
+                      //     key={header.id}
+                      //     className="relative text-nowrap border-r"
+                      //   >
+                      //     {header.isPlaceholder
+                      //       ? null
+                      //       : flexRender(
+                      //           header.column.columnDef.header,
+                      //           header.getContext(),
+                      //         )}
 
-                      <ColumnResizer header={header} />
-                    </TableHead>
-                  )
-                })}
-              </TableRow>
-            ))}
-          </TableHeader>
-          {/* When resizing any column we will render this special memoized version of our table body */}
-          {table.getState().columnSizingInfo.isResizingColumn ? (
-            <MemoizedTBody table={table} columns={columns} />
-          ) : (
-            <TBody table={table} columns={columns} />
-          )}
-        </Table>
+                      //     <ColumnResizer header={header} />
+                      //   </TableHead>
+                      // )
+                    })}
+                  </SortableContext>
+                </TableRow>
+              ))}
+            </TableHeader>
+            {/* When resizing any column we will render this special memoized version of our table body */}
+            <FastBody
+              table={table}
+              columns={columns}
+              columnOrder={columnOrder}
+            />
+          </Table>
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </DndContext>
+  )
+}
+
+function FastBody({
+  table,
+  columns,
+  columnOrder,
+}: {
+  table: ReactTable<DataTableItem>
+  columns: ColumnDef<DataTableItem>[]
+  columnOrder: string[]
+}) {
+  return table.getState().columnSizingInfo.isResizingColumn ? (
+    <MemoizedTBody table={table} columns={columns} columnOrder={columnOrder} />
+  ) : (
+    <TBody table={table} columns={columns} columnOrder={columnOrder} />
+  )
+}
+
+const DraggableTableHeader = ({
+  header,
+}: {
+  header: Header<DataTableItem, unknown>
+}) => {
+  const { attributes, isDragging, listeners, setNodeRef, transform } =
+    useSortable({
+      id: header.column.id,
+    })
+
+  const style: CSSProperties = {
+    opacity: isDragging ? 0.8 : 1,
+    position: 'relative',
+    transform: CSS.Translate.toString(transform), // translate instead of transform to avoid squishing
+    transition: 'width transform 0.2s ease-in-out',
+    whiteSpace: 'nowrap',
+    width: header.column.getSize(),
+    zIndex: isDragging ? 1 : 0,
+  }
+
+  return (
+    <TableHead
+      key={header.id}
+      className="relative touch-none select-none text-nowrap border-r"
+      colSpan={header.colSpan}
+      ref={setNodeRef}
+      style={style}
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        style={{
+          cursor: isDragging ? 'grabbing' : 'grab',
+        }}
+      >
+        {header.isPlaceholder
+          ? null
+          : flexRender(header.column.columnDef.header, header.getContext())}
       </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+      <ColumnResizer header={header} />
+    </TableHead>
+  )
+
+  return (
+    <th colSpan={header.colSpan} ref={setNodeRef} style={style}>
+      {header.isPlaceholder
+        ? null
+        : flexRender(header.column.columnDef.header, header.getContext())}
+      <button {...attributes} {...listeners}>
+        🟰
+      </button>
+    </th>
+  )
+}
+
+const DragAlongCell = ({ cell }: { cell: Cell<DataTableItem, unknown> }) => {
+  const { isDragging, setNodeRef, transform } = useSortable({
+    id: cell.column.id,
+  })
+
+  const style: CSSProperties = {
+    opacity: isDragging ? 0.8 : 1,
+    position: 'relative',
+    transform: CSS.Translate.toString(transform), // translate instead of transform to avoid squishing
+    transition: 'width transform 0.2s ease-in-out',
+    // width: cell.column.getSize(),
+    zIndex: isDragging ? 1 : 0,
+  }
+
+  return (
+    <TableCell
+      key={cell.id}
+      style={{
+        width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
+        ...style,
+      }}
+      className="border-r"
+      ref={setNodeRef}
+    >
+      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+    </TableCell>
+  )
+
+  return (
+    <td style={style} ref={setNodeRef}>
+      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+    </td>
   )
 }
 
@@ -150,22 +317,34 @@ export const ColumnResizer = ({
 function TBody({
   table,
   columns,
-}: { table: ReactTable<DataTableItem>; columns: ColumnDef<DataTableItem>[] }) {
+  columnOrder,
+}: {
+  table: ReactTable<DataTableItem>
+  columns: ColumnDef<DataTableItem>[]
+  columnOrder: string[]
+}) {
   return (
     <TableBody>
       {table.getRowModel().rows?.length ? (
         table.getRowModel().rows.map((row) => (
           <TableRow key={row.id} data-state={row.getIsSelected() && 'selected'}>
             {row.getVisibleCells().map((cell) => (
-              <TableCell
+              <SortableContext
                 key={cell.id}
-                style={{
-                  width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-                }}
-                className="border-r"
+                items={columnOrder}
+                strategy={horizontalListSortingStrategy}
               >
-                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              </TableCell>
+                <DragAlongCell key={cell.id} cell={cell} />
+              </SortableContext>
+              // <TableCell
+              //   key={cell.id}
+              //   style={{
+              //     width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
+              //   }}
+              //   className="border-r"
+              // >
+              //   {flexRender(cell.column.columnDef.cell, cell.getContext())}
+              // </TableCell>
             ))}
           </TableRow>
         ))
