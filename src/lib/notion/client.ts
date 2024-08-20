@@ -13,7 +13,7 @@ const notionClient = new Client({
 })
 
 export async function queryNotionDatabase(
-  variables?: QueryDatabaseParameters,
+  variables?: Omit<QueryDatabaseParameters, 'database_id'>,
 ): Promise<DataTableItems[]> {
   const query = await notionClient.databases.query({
     ...variables,

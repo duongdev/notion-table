@@ -21,15 +21,6 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
-  CalendarIcon,
-  CheckboxIcon,
-  FrameIcon,
-  LetterCaseCapitalizeIcon,
-  ListBulletIcon,
-  TextAlignLeftIcon,
-  TriangleDownIcon,
-} from '@radix-ui/react-icons'
-import {
   type Cell,
   type ColumnDef,
   type Header,
@@ -56,6 +47,7 @@ import {
   TableRow,
 } from '../ui/table'
 import { DataTableCell } from './data-table-cell'
+import { PropertyIcon } from './property-icon'
 import type { DataTableItem } from './types'
 
 export type DataTableProps = {
@@ -230,27 +222,6 @@ const DraggableTableHeader = ({
     zIndex: isDragging ? 1 : 0,
   }
 
-  const HeaderIcon = useMemo(() => {
-    switch (columnType) {
-      case 'title':
-        return LetterCaseCapitalizeIcon
-      case 'number':
-        return FrameIcon
-      case 'checkbox':
-        return CheckboxIcon
-      case 'rich_text':
-        return TextAlignLeftIcon
-      case 'select':
-        return TriangleDownIcon
-      case 'multi_select':
-        return ListBulletIcon
-      case 'date':
-        return CalendarIcon
-      default:
-        return null
-    }
-  }, [columnType])
-
   return (
     <TableHead
       key={header.id}
@@ -269,7 +240,7 @@ const DraggableTableHeader = ({
       >
         {header.isPlaceholder ? null : (
           <>
-            {HeaderIcon && <HeaderIcon className="mr-1.5" />}
+            <PropertyIcon type={columnType} className="mr-1.5" />
             {flexRender(header.column.columnDef.header, header.getContext())}
           </>
         )}
