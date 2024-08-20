@@ -9,7 +9,10 @@ import { DataTable } from './data-table'
 export type NotionDataTableProps = {}
 
 export const NotionDataTable: FC<NotionDataTableProps> = () => {
-  const { isLoaded, entities } = useDataTableStore((state) => state)
+  const { isLoaded, entities } = useDataTableStore((state) => ({
+    isLoaded: state.isLoaded,
+    entities: state.entities,
+  }))
 
   if (!isLoaded) {
     return (

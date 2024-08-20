@@ -91,35 +91,6 @@ export const DataTableSorts: FC = () => {
   )
 }
 
-const DeleteSort: FC = () => {
-  const sorts = useDataTableStore((state) => state.sorts)
-  const setSorts = useDataTableStore((state) => state.setSorts)
-  const [isConfirming, setIsConfirming] = useState(false)
-
-  const handleClick = () => {
-    if (isConfirming) {
-      setSorts([])
-      setIsConfirming(false)
-    } else {
-      setIsConfirming(true)
-    }
-  }
-
-  return (
-    <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 w-full justify-start px-2 text-muted-foreground hover:text-destructive"
-      disabled={sorts.length === 0}
-      onClick={handleClick}
-      onMouseLeave={() => setIsConfirming(false)}
-    >
-      <TrashIcon className="mr-2 size-4" />{' '}
-      {isConfirming ? 'Confirm?' : 'Delete sorts'}
-    </Button>
-  )
-}
-
 const AddSort: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const { properties, sorts, setSorts } = useDataTableStore((state) => ({
@@ -174,6 +145,35 @@ const AddSort: FC = () => {
   )
 }
 
+const DeleteSort: FC = () => {
+  const sorts = useDataTableStore((state) => state.sorts)
+  const setSorts = useDataTableStore((state) => state.setSorts)
+  const [isConfirming, setIsConfirming] = useState(false)
+
+  const handleClick = () => {
+    if (isConfirming) {
+      setSorts([])
+      setIsConfirming(false)
+    } else {
+      setIsConfirming(true)
+    }
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      className="h-7 w-full justify-start px-2 text-muted-foreground hover:text-destructive"
+      disabled={sorts.length === 0}
+      onClick={handleClick}
+      onMouseLeave={() => setIsConfirming(false)}
+    >
+      <TrashIcon className="mr-2 size-4" />{' '}
+      {isConfirming ? 'Confirm?' : 'Delete sorts'}
+    </Button>
+  )
+}
+
 const SortList: FC<{ className?: string }> = ({ className }) => {
   // biome-ignore lint/style/useNamingConvention: <explanation>
   const { sorts: _sorts, setSorts } = useDataTableStore((state) => ({
@@ -214,16 +214,19 @@ const SortList: FC<{ className?: string }> = ({ className }) => {
     [sorts, setSorts],
   )
 
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
+  const handleDragEnd = useMemo(
+    () => (event: DragEndEvent) => {
+      const { active, over } = event
 
-    if (active.id !== over?.id) {
-      const oldIndex = sorts.findIndex((sort) => sort.property === active.id)
-      const newIndex = sorts.findIndex((sort) => sort.property === over?.id)
+      if (active.id !== over?.id) {
+        const oldIndex = sorts.findIndex((sort) => sort.property === active.id)
+        const newIndex = sorts.findIndex((sort) => sort.property === over?.id)
 
-      return setSorts(arrayMove(sorts, oldIndex, newIndex))
-    }
-  }
+        return setSorts(arrayMove(sorts, oldIndex, newIndex))
+      }
+    },
+    [sorts, setSorts],
+  )
 
   if (sorts.length === 0) {
     return (

@@ -25,8 +25,8 @@ const config = {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         fontFamily: {
-          sans: ['var(--font-geist-sans)'],
-          mono: ['var(--font-geist-mono)'],
+          sans: 'var(--font-geist-sans)',
+          mono: 'var(--font-geist-mono)',
         },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
