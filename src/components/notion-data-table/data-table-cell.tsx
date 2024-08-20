@@ -1,6 +1,7 @@
 import type { DataTableProperties } from '@/lib/notion/types'
+import { isEqual } from 'lodash-es'
 import { useTheme } from 'next-themes'
-import type { FC } from 'react'
+import { type FC, memo } from 'react'
 import { Checkbox } from '../ui/checkbox'
 
 export const notionColors: Record<string, string> = {
@@ -76,6 +77,10 @@ export const DataTableCell: FC<DataTableCellProps> = ({ property }) => {
       return <div>{JSON.stringify(property)}</div>
   }
 }
+
+export const MemoizedDataTableCell = memo(DataTableCell, (prev, next) => {
+  return isEqual(prev.property, next.property)
+})
 
 const SelectItem: FC<{ name: string; color: string }> = ({ name, color }) => {
   const { resolvedTheme } = useTheme()

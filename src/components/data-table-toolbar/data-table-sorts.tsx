@@ -22,12 +22,12 @@ import {
   Cross2Icon,
   DragHandleDots2Icon,
   LineHeightIcon,
-  MixerVerticalIcon,
   PlusIcon,
   TrashIcon,
 } from '@radix-ui/react-icons'
 import clsx from 'clsx'
 import { type FC, useCallback, useMemo, useState } from 'react'
+import { PropertyIcon } from '../notion-data-table/property-icon'
 import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
 import {
@@ -44,27 +44,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip'
-import { PropertyIcon } from './property-icon'
 
-export type DataTableToolbarProps = {}
-
-export const DataTableToolbar: FC<DataTableToolbarProps> = () => {
-  return (
-    <div className="flex h-5 items-center gap-2">
-      <SortToolbar />
-      <Separator orientation="vertical" />
-      <Button
-        variant="ghost"
-        size="sm"
-        className="px-1.5 py-1 text-muted-foreground hover:text-foreground"
-      >
-        <MixerVerticalIcon className="mr-1 size-3" /> Add filter
-      </Button>
-    </div>
-  )
-}
-
-const SortToolbar: FC = () => {
+export const DataTableSorts: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const fetchNotionData = useDataTableStore((state) => state.fetchNotionData)
   const sorts = useDataTableStore((state) => state.sorts)

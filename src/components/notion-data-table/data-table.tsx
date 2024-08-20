@@ -1,6 +1,6 @@
 'use client'
 
-import type { DataTableProperties, DataTableProperty } from '@/lib/notion/types'
+import type { DataTableProperty } from '@/lib/notion/types'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import {
   DndContext,
@@ -29,10 +29,12 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
+import { isEqual } from 'lodash-es'
 import {
   type CSSProperties,
   type FC,
   memo,
+  useCallback,
   useId,
   useMemo,
   useState,
@@ -46,36 +48,12 @@ import {
   TableHeader,
   TableRow,
 } from '../ui/table'
-import { DataTableCell } from './data-table-cell'
+import { getTableColumns } from './get-table-columns'
 import { PropertyIcon } from './property-icon'
 import type { DataTableItem } from './types'
 
 export type DataTableProps = {
   data: DataTableItem[]
-}
-
-function getTableColumns(
-  properties: DataTableProperties,
-): ColumnDef<DataTableItem>[] {
-  // property.type === 'title' always goes first
-  const titleProperty = Object.entries(properties).find(
-    ([, property]) => property.type === 'title',
-  )!
-  const propertiesWithoutTitle = Object.fromEntries(
-    Object.entries(properties).filter(([key]) => key !== titleProperty?.[0]),
-  )
-
-  return [titleProperty[0], ...Object.keys(propertiesWithoutTitle)].map(
-    (key) =>
-      ({
-        id: properties[key].id,
-        header: key,
-        cell: ({ row: { original } }) => {
-          return <DataTableCell property={original[key]} />
-        },
-        meta: { type: properties[key].type },
-      }) as ColumnDef<DataTableItem>,
-  )
 }
 
 export const DataTable: FC<DataTableProps> = ({ data }) => {
@@ -106,7 +84,7 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
   })
 
   // reorder columns after drag & drop
-  function handleDragEnd(event: DragEndEvent) {
+  const handleColumnDragEnd = useCallback((event: DragEndEvent) => {
     const { active, over } = event
     if (active && over && active.id !== over.id) {
       setColumnOrder((columnOrder) => {
@@ -115,7 +93,7 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
         return arrayMove(columnOrder, oldIndex, newIndex) //this is just a splice util
       })
     }
-  }
+  }, [])
 
   const sensors = useSensors(
     useSensor(MouseSensor, {}),
@@ -142,7 +120,7 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
       key={dndId}
       collisionDetection={closestCenter}
       modifiers={[restrictToHorizontalAxis]}
-      onDragEnd={handleDragEnd}
+      onDragEnd={handleColumnDragEnd}
       sensors={sensors}
     >
       <ScrollArea className="w-full">
@@ -169,7 +147,7 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
                 ))}
               </TableHeader>
               {/* When resizing any column we will render this special memoized version of our table body */}
-              <FastBody
+              <PerformantBody
                 table={table}
                 columns={columns}
                 columnOrder={columnOrder}
@@ -183,7 +161,7 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
   )
 }
 
-function FastBody({
+function PerformantBody({
   table,
   columns,
   columnOrder,
@@ -204,23 +182,29 @@ const DraggableTableHeader = ({
 }: {
   header: Header<DataTableItem, unknown>
 }) => {
-  const columnType = (
-    header.column.columnDef.meta as { type: DataTableProperty['type'] }
-  )?.type
+  const columnType = useMemo(
+    () =>
+      (header.column.columnDef.meta as { type: DataTableProperty['type'] })
+        ?.type,
+    [header.column.columnDef.meta],
+  )
   const { attributes, isDragging, listeners, setNodeRef, transform } =
     useSortable({
       id: header.column.id,
     })
 
-  const style: CSSProperties = {
-    opacity: isDragging ? 0.8 : 1,
-    position: 'relative',
-    transform: CSS.Translate.toString(transform), // translate instead of transform to avoid squishing
-    transition: 'width transform 0.2s ease-in-out',
-    whiteSpace: 'nowrap',
-    width: header.column.getSize(),
-    zIndex: isDragging ? 1 : 0,
-  }
+  const style: CSSProperties = useMemo(
+    () => ({
+      opacity: isDragging ? 0.8 : 1,
+      position: 'relative',
+      transform: CSS.Translate.toString(transform), // translate instead of transform to avoid squishing
+      transition: 'width transform 0.2s ease-in-out',
+      whiteSpace: 'nowrap',
+      width: header.column.getSize(),
+      zIndex: isDragging ? 1 : 0,
+    }),
+    [header.column.getSize, isDragging, transform],
+  )
 
   return (
     <TableHead
@@ -255,14 +239,16 @@ const DragAlongCell = ({ cell }: { cell: Cell<DataTableItem, unknown> }) => {
     id: cell.column.id,
   })
 
-  const style: CSSProperties = {
-    opacity: isDragging ? 0.8 : 1,
-    position: 'relative',
-    transform: CSS.Translate.toString(transform), // translate instead of transform to avoid squishing
-    transition: 'width transform 0.2s ease-in-out',
-    // width: cell.column.getSize(),
-    zIndex: isDragging ? 1 : 0,
-  }
+  const style: CSSProperties = useMemo(
+    () => ({
+      opacity: isDragging ? 0.8 : 1,
+      position: 'relative',
+      transform: CSS.Translate.toString(transform),
+      transition: 'width transform 0.2s ease-in-out',
+      zIndex: isDragging ? 1 : 0,
+    }),
+    [isDragging, transform],
+  )
 
   return (
     <TableCell
@@ -285,7 +271,7 @@ export const ColumnResizer = ({
   header: Header<DataTableItem, unknown>
 }) => {
   if (header.column.getCanResize() === false) {
-    return <></>
+    return null
   }
 
   return (
@@ -302,7 +288,6 @@ export const ColumnResizer = ({
   )
 }
 
-//un-memoized normal table body component - see memoized version below
 function TBody({
   table,
   columns,
@@ -339,7 +324,7 @@ function TBody({
   )
 }
 
-//special memoized wrapper for our table body that we will use during column resizing
+// special memoized wrapper for our table body that we will use during column resizing
 export const MemoizedTBody = memo(TBody, (prev, next) => {
-  return prev.table.options.data === next.table.options.data
+  return isEqual(prev, next)
 }) as typeof TBody

@@ -1,5 +1,6 @@
-import { DataTableToolbar } from '@/components/notion-data-table/data-table-toolbar'
+import { DataTableToolbar } from '@/components/data-table-toolbar/data-table-toolbar'
 import { NotionDataTable } from '@/components/notion-data-table/notion-data-table'
+import { ArrowTopRightIcon } from '@radix-ui/react-icons'
 import type { FC } from 'react'
 
 export type PageProps = {}
@@ -14,6 +15,17 @@ const Page: FC<PageProps> = () => {
         <DataTableToolbar />
       </div>
       <NotionDataTable />
+      <div className="text-center">
+        <a
+          href="https://www.kaggle.com/datasets/ngtengsuan/genshin-impact-characters-dataset"
+          rel="noopener noreferrer"
+          target="_blank"
+          className="inline-flex items-center border-muted border-b border-dashed text-muted-foreground text-xs transition-colors hover:border-foreground hover:text-foreground"
+        >
+          Source: Kaggle
+          <ArrowTopRightIcon className="ml-1 size-3" />
+        </a>
+      </div>
     </div>
   )
 }
