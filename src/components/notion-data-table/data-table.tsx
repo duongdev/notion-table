@@ -1,6 +1,6 @@
 'use client'
 
-import type { DataTableProperties } from '@/lib/notion/types'
+import type { DataTableProperties, DataTableProperty } from '@/lib/notion/types'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import {
   DndContext,
@@ -20,6 +20,15 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import {
+  CalendarIcon,
+  CheckboxIcon,
+  FrameIcon,
+  LetterCaseCapitalizeIcon,
+  ListBulletIcon,
+  TextAlignLeftIcon,
+  TriangleDownIcon,
+} from '@radix-ui/react-icons'
 import {
   type Cell,
   type ColumnDef,
@@ -65,6 +74,7 @@ function getTableColumns(
         cell: ({ row: { original } }) => {
           return <DataTableCell property={original[key]} />
         },
+        meta: { type: properties[key].type },
       }) as ColumnDef<DataTableItem>,
   )
 }
@@ -205,6 +215,9 @@ const DraggableTableHeader = ({
 }: {
   header: Header<DataTableItem, unknown>
 }) => {
+  const columnType = (
+    header.column.columnDef.meta as { type: DataTableProperty['type'] }
+  )?.type
   const { attributes, isDragging, listeners, setNodeRef, transform } =
     useSortable({
       id: header.column.id,
@@ -220,6 +233,27 @@ const DraggableTableHeader = ({
     zIndex: isDragging ? 1 : 0,
   }
 
+  const HeaderIcon = useMemo(() => {
+    switch (columnType) {
+      case 'title':
+        return LetterCaseCapitalizeIcon
+      case 'number':
+        return FrameIcon
+      case 'checkbox':
+        return CheckboxIcon
+      case 'rich_text':
+        return TextAlignLeftIcon
+      case 'select':
+        return TriangleDownIcon
+      case 'multi_select':
+        return ListBulletIcon
+      case 'date':
+        return CalendarIcon
+      default:
+        return null
+    }
+  }, [columnType])
+
   return (
     <TableHead
       key={header.id}
@@ -234,10 +268,14 @@ const DraggableTableHeader = ({
         style={{
           cursor: isDragging ? 'grabbing' : 'grab',
         }}
+        className="flex items-center"
       >
-        {header.isPlaceholder
-          ? null
-          : flexRender(header.column.columnDef.header, header.getContext())}
+        {header.isPlaceholder ? null : (
+          <>
+            {HeaderIcon && <HeaderIcon className="mr-1.5" />}
+            {flexRender(header.column.columnDef.header, header.getContext())}
+          </>
+        )}
       </div>
       <ColumnResizer header={header} />
     </TableHead>
