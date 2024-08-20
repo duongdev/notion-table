@@ -1,13 +1,12 @@
 import { Header } from '@/components/header'
 import { ThemeProvider } from '@/components/theme-provider'
+import { queryNotionDatabase } from '@/lib/notion/client'
 import { DataTableStoreProvider } from '@/stores/data-table-provider'
+import { GeistMono } from 'geist/font/mono'
+import { GeistSans } from 'geist/font/sans'
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 
 import './globals.css'
-import { queryNotionDatabase } from '@/lib/notion/client'
-
-const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Genshin Impact Characters',
@@ -22,9 +21,13 @@ export default async function RootLayout({
   const entities = await queryNotionDatabase()
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${GeistMono.variable} ${GeistSans.variable}`}
+    >
       <head />
-      <body className={inter.className}>
+      <body>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
