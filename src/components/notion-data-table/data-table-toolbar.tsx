@@ -2,7 +2,25 @@
 
 import { useDataTableStore } from '@/stores/data-table-provider'
 import {
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   Cross2Icon,
+  DragHandleDots2Icon,
   LineHeightIcon,
   MixerVerticalIcon,
   PlusIcon,
@@ -69,6 +87,7 @@ const SortToolbar: FC = () => {
           className={clsx(
             'px-1.5 py-1 text-muted-foreground hover:text-foreground',
             'border border-dashed',
+            sorts.length > 0 && 'text-foreground',
           )}
         >
           <LineHeightIcon className="mr-1 size-3" /> Add sort
@@ -83,7 +102,7 @@ const SortToolbar: FC = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="start" className="w-80 p-1">
-        <SortList className="mb-2 flex-1" />
+        <SortList className="my-1 flex-1" />
         <AddSort />
         <DeleteSort />
       </PopoverContent>
@@ -109,12 +128,12 @@ const DeleteSort: FC = () => {
     <Button
       size="sm"
       variant="ghost"
-      className="w-full justify-start px-2 text-muted-foreground hover:text-destructive"
+      className="h-7 w-full justify-start px-2 text-muted-foreground hover:text-destructive"
       disabled={sorts.length === 0}
       onClick={handleClick}
       onMouseLeave={() => setIsConfirming(false)}
     >
-      <TrashIcon className="mr-1 size-4" />{' '}
+      <TrashIcon className="mr-2 size-4" />{' '}
       {isConfirming ? 'Confirm?' : 'Delete sorts'}
     </Button>
   )
@@ -151,9 +170,9 @@ const AddSort: FC = () => {
         <Button
           size="sm"
           variant="ghost"
-          className="w-full justify-start px-2 text-muted-foreground"
+          className="h-7 w-full justify-start px-2 text-muted-foreground"
         >
-          <PlusIcon className="mr-1 size-4" /> Add sort
+          <PlusIcon className="mr-2 size-4" /> Add sort
         </Button>
       </PopoverTrigger>
       <PopoverContent side="bottom" align="center" className="w-60 p-1">
@@ -175,10 +194,23 @@ const AddSort: FC = () => {
 }
 
 const SortList: FC<{ className?: string }> = ({ className }) => {
-  const { sorts, setSorts } = useDataTableStore((state) => ({
+  // biome-ignore lint/style/useNamingConvention: <explanation>
+  const { sorts: _sorts, setSorts } = useDataTableStore((state) => ({
     sorts: state.sorts,
     setSorts: state.setSorts,
   }))
+
+  const sorts = useMemo(
+    () => _sorts.map((s) => ({ id: s.property, ...s })),
+    [_sorts],
+  )
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   const handleRemoveSort = useCallback(
     (index: number) => {
@@ -195,11 +227,22 @@ const SortList: FC<{ className?: string }> = ({ className }) => {
       props: { property: string; direction: 'ascending' | 'descending' },
     ) => {
       const newSorts = [...sorts]
-      newSorts[index] = props
+      newSorts[index] = { ...props, id: props.property }
       setSorts(newSorts)
     },
     [sorts, setSorts],
   )
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+
+    if (active.id !== over?.id) {
+      const oldIndex = sorts.findIndex((sort) => sort.property === active.id)
+      const newIndex = sorts.findIndex((sort) => sort.property === over?.id)
+
+      return setSorts(arrayMove(sorts, oldIndex, newIndex))
+    }
+  }
 
   if (sorts.length === 0) {
     return (
@@ -210,19 +253,30 @@ const SortList: FC<{ className?: string }> = ({ className }) => {
   }
 
   return (
-    <TooltipProvider>
-      <div className={clsx('flex flex-col gap-1', className)}>
-        {sorts.map((sort, index) => (
-          <SortItem
-            key={sort.property}
-            property={sort.property}
-            direction={sort.direction}
-            onRemove={() => handleRemoveSort(index)}
-            onChange={(props) => handleChangeSort(index, props)}
-          />
-        ))}
-      </div>
-    </TooltipProvider>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <TooltipProvider>
+        <SortableContext
+          items={sorts.map((s) => ({ ...s, id: s.property }))}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className={clsx('flex flex-col gap-1', className)}>
+            {sorts.map((sort, index) => (
+              <SortItem
+                key={sort.property}
+                property={sort.property}
+                direction={sort.direction}
+                onRemove={() => handleRemoveSort(index)}
+                onChange={(props) => handleChangeSort(index, props)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </TooltipProvider>
+    </DndContext>
   )
 }
 
@@ -252,8 +306,25 @@ const SortItem: FC<{
       )
   }, [properties, sorts, property])
 
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id: property })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1" ref={setNodeRef} style={style}>
+      <Button
+        size={null}
+        variant="ghost"
+        className="ml-1 shrink-0 cursor-grab p-1 text-muted-foreground active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+      >
+        <DragHandleDots2Icon />
+      </Button>
       <Select
         value={property}
         onValueChange={(value) => {
@@ -302,7 +373,7 @@ const SortItem: FC<{
           <Button
             size={null}
             variant="ghost"
-            className="mx-1 shrink-0 p-1 text-muted-foreground"
+            className="mr-1 shrink-0 p-1 text-muted-foreground"
             onClick={onRemove}
           >
             <Cross2Icon />
