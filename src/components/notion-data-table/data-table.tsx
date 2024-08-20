@@ -38,7 +38,14 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-import { type CSSProperties, type FC, memo, useMemo, useState } from 'react'
+import {
+  type CSSProperties,
+  type FC,
+  memo,
+  useId,
+  useMemo,
+  useState,
+} from 'react'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import {
   Table,
@@ -136,8 +143,11 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
     return colSizes
   }, [table.getState().columnSizingInfo, table.getState().columnSizing])
 
+  const dndId = useId()
+
   return (
     <DndContext
+      key={dndId}
       collisionDetection={closestCenter}
       modifiers={[restrictToHorizontalAxis]}
       onDragEnd={handleDragEnd}
@@ -145,48 +155,35 @@ export const DataTable: FC<DataTableProps> = ({ data }) => {
     >
       <ScrollArea className="w-full">
         <div className="px-4 sm:px-8 md:px-24">
-          <Table
-            style={{ ...columnSizeVars, width: table.getTotalSize() }}
-            className="mx-1 border"
-          >
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  <SortableContext
-                    items={columnOrder}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <DraggableTableHeader key={header.id} header={header} />
-                      )
-                      // return (
-                      //   <TableHead
-                      //     key={header.id}
-                      //     className="relative text-nowrap border-r"
-                      //   >
-                      //     {header.isPlaceholder
-                      //       ? null
-                      //       : flexRender(
-                      //           header.column.columnDef.header,
-                      //           header.getContext(),
-                      //         )}
-
-                      //     <ColumnResizer header={header} />
-                      //   </TableHead>
-                      // )
-                    })}
-                  </SortableContext>
-                </TableRow>
-              ))}
-            </TableHeader>
-            {/* When resizing any column we will render this special memoized version of our table body */}
-            <FastBody
-              table={table}
-              columns={columns}
-              columnOrder={columnOrder}
-            />
-          </Table>
+          <div className="[&>div]:-mr-[1px] overflow-hidden rounded-md border [&>div]:overflow-hidden">
+            <Table style={{ ...columnSizeVars, width: table.getTotalSize() }}>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    <SortableContext
+                      items={columnOrder}
+                      strategy={horizontalListSortingStrategy}
+                    >
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <DraggableTableHeader
+                            key={header.id}
+                            header={header}
+                          />
+                        )
+                      })}
+                    </SortableContext>
+                  </TableRow>
+                ))}
+              </TableHeader>
+              {/* When resizing any column we will render this special memoized version of our table body */}
+              <FastBody
+                table={table}
+                columns={columns}
+                columnOrder={columnOrder}
+              />
+            </Table>
+          </div>
         </div>
         <ScrollBar orientation="horizontal" />
       </ScrollArea>
@@ -280,17 +277,6 @@ const DraggableTableHeader = ({
       <ColumnResizer header={header} />
     </TableHead>
   )
-
-  return (
-    <th colSpan={header.colSpan} ref={setNodeRef} style={style}>
-      {header.isPlaceholder
-        ? null
-        : flexRender(header.column.columnDef.header, header.getContext())}
-      <button {...attributes} {...listeners}>
-        🟰
-      </button>
-    </th>
-  )
 }
 
 const DragAlongCell = ({ cell }: { cell: Cell<DataTableItem, unknown> }) => {
@@ -319,12 +305,6 @@ const DragAlongCell = ({ cell }: { cell: Cell<DataTableItem, unknown> }) => {
     >
       {flexRender(cell.column.columnDef.cell, cell.getContext())}
     </TableCell>
-  )
-
-  return (
-    <td style={style} ref={setNodeRef}>
-      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-    </td>
   )
 }
 
@@ -374,15 +354,6 @@ function TBody({
               >
                 <DragAlongCell key={cell.id} cell={cell} />
               </SortableContext>
-              // <TableCell
-              //   key={cell.id}
-              //   style={{
-              //     width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-              //   }}
-              //   className="border-r"
-              // >
-              //   {flexRender(cell.column.columnDef.cell, cell.getContext())}
-              // </TableCell>
             ))}
           </TableRow>
         ))

@@ -1,27 +1,26 @@
 'use client'
 
+import type { DataTableItems } from '@/lib/notion/types'
 import { type ReactNode, createContext, useContext, useRef } from 'react'
 import { type StoreApi, useStore } from 'zustand'
-import {
-  type DataTableStore,
-  createDataTableStore,
-  initDataTableStore,
-} from './data-table-store'
+import { type DataTableStore, createDataTableStore } from './data-table-store'
 
 export const DataTableStoreContext =
   createContext<StoreApi<DataTableStore> | null>(null)
 
 export type DataTableStoreProviderProps = {
   children: ReactNode
+  entities: DataTableItems[]
 }
 
 export const DataTableStoreProvider = ({
   children,
+  entities,
 }: DataTableStoreProviderProps) => {
   const storeRef = useRef<StoreApi<DataTableStore>>()
 
   if (!storeRef.current) {
-    storeRef.current = createDataTableStore(initDataTableStore())
+    storeRef.current = createDataTableStore(entities)
   }
 
   return (

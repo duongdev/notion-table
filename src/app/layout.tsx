@@ -5,6 +5,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 
 import './globals.css'
+import { queryNotionDatabase } from '@/lib/notion/client'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,11 +14,13 @@ export const metadata: Metadata = {
   description: 'Genshin Impact Characters Dataset',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const entities = await queryNotionDatabase()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head />
@@ -28,7 +31,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DataTableStoreProvider>
+          <DataTableStoreProvider entities={entities}>
             <Header />
             {children}
           </DataTableStoreProvider>

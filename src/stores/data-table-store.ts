@@ -1,4 +1,3 @@
-import { queryNotionDatabase } from '@/lib/notion/client'
 import { getNotionProperties } from '@/lib/notion/helpers'
 import type { DataTableItems, DataTableProperties } from '@/lib/notion/types'
 import { createStore } from 'zustand/vanilla'
@@ -19,26 +18,12 @@ export const defaultInitialDataTableState: DataTableState = {
   properties: {},
 }
 
-export async function initDataTableStore(): Promise<DataTableState> {
-  try {
-    const entities = await queryNotionDatabase()
-    const properties = getNotionProperties(entities)
-
-    return {
-      isLoaded: true,
-      entities,
-      properties,
-    }
-  } catch (error) {
-    console.error('Failed to initialize DataTableStore:', error)
-    return defaultInitialDataTableState
-  }
-}
-
-export const createDataTableStore = (initState: Promise<DataTableState>) => {
+export const createDataTableStore = (entities: DataTableItems[]) => {
   const store = createStore<DataTableState>()((_set) => ({
     ...defaultInitialDataTableState,
+    entities,
+    properties: getNotionProperties(entities),
+    isLoaded: true,
   }))
-  initState.then((state) => store.setState(state))
   return store
 }

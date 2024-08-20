@@ -3,7 +3,7 @@ import { useTheme } from 'next-themes'
 import type { FC } from 'react'
 import { Checkbox } from '../ui/checkbox'
 
-export const notionColors = {
+export const notionColors: Record<string, string> = {
   blue: '#0369a1',
   brown: '#450a0a',
   default: '#27272a',
@@ -19,35 +19,22 @@ export const notionColors = {
 export type DataTableCellProps = { property: DataTableProperties[string] }
 
 export const DataTableCell: FC<DataTableCellProps> = ({ property }) => {
-  const { theme } = useTheme()
-
   switch (property.type) {
     case 'title':
       return <div className="font-semibold">{property.title[0].plain_text}</div>
     case 'select':
       return property.select ? (
-        <span
-          style={{
-            backgroundColor: `${notionColors[property.select.color] || notionColors.default}${theme === 'light' ? '40' : ''}`,
-          }}
-          className="text-nowrap rounded-md px-1.5 py-1"
-        >
-          {property.select.name}
-        </span>
+        <SelectItem name={property.select.name} color={property.select.color} />
       ) : null
     case 'multi_select':
       return (
         <div className="flex flex-row flex-wrap gap-1.5 overflow-auto">
           {property.multi_select.map((select) => (
-            <span
-              key={select.id}
-              style={{
-                backgroundColor: `${notionColors[select.color] || notionColors.default}${theme === 'light' ? '40' : ''}`,
-              }}
-              className="text-nowrap rounded-md px-1.5 py-1"
-            >
-              {select.name}
-            </span>
+            <SelectItem
+              key={select.name}
+              name={select.name}
+              color={select.color}
+            />
           ))}
         </div>
       )
@@ -88,4 +75,19 @@ export const DataTableCell: FC<DataTableCellProps> = ({ property }) => {
     default:
       return <div>{JSON.stringify(property)}</div>
   }
+}
+
+const SelectItem: FC<{ name: string; color: string }> = ({ name, color }) => {
+  const { resolvedTheme } = useTheme()
+
+  return (
+    <span
+      style={{
+        backgroundColor: `${notionColors[color] || notionColors.default}${resolvedTheme !== 'dark' ? '40' : ''}`,
+      }}
+      className="text-nowrap rounded-md px-2.5 py-0.5 font-medium text-foreground text-xs transition-colors"
+    >
+      {name}
+    </span>
+  )
 }
