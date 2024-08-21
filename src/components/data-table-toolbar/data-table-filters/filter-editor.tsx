@@ -43,10 +43,11 @@ import { useShallow } from 'zustand/react/shallow'
 import { PropertySelect } from '../property-select'
 import {
   COMPOUND_OPERATOR,
+  ENABLE_NEGATION_OPERATION,
   FILTER_CONFIG,
   MAX_FILTER_DEPTH,
 } from './filter-config'
-import { getFilterValueType, isBaseFilter } from './helpers'
+import { getFilterValueType, isBaseFilter, isCompoundFilter } from './helpers'
 import type {
   BaseFilter,
   CompoundFilter,
@@ -107,9 +108,19 @@ const FilterItem: FC<{ filter: Filter; filterIndex: number }> = ({
   const updateCompoundFilterOperator = useDataTableStore(
     (state) => state.updateCompoundFilterOperator,
   )
+  const updateCompoundFilterNegation = useDataTableStore(
+    (state) => state.updateCompoundFilterNegation,
+  )
   const compoundOperator = useMemo(() => {
-    if (filterIndex === 0) {
-      return <NegationSelect />
+    if (filterIndex === 0 && isCompoundFilter(parentFilter)) {
+      return (
+        <NegationSelect
+          value={!!parentFilter.isNegated}
+          onValueChange={(isNegated) =>
+            updateCompoundFilterNegation(parentFilter.id, isNegated)
+          }
+        />
+      )
     }
 
     if (filterIndex === 1) {
@@ -129,10 +140,10 @@ const FilterItem: FC<{ filter: Filter; filterIndex: number }> = ({
       </div>
     )
   }, [
+    parentFilter,
     filterIndex,
-    parentFilter.operator,
-    parentFilter.id,
     updateCompoundFilterOperator,
+    updateCompoundFilterNegation,
   ])
 
   const filterItem = useMemo(() => {
@@ -309,9 +320,15 @@ const AddFilterMenu: FC<{ parentId: FilterId; depth: number }> = ({
   )
 }
 
-const NegationSelect: FC = () => {
+const NegationSelect: FC<{
+  value: boolean
+  onValueChange: (value: boolean) => void
+}> = ({ value, onValueChange }) => {
   return (
-    <Select value="no" onValueChange={(value) => console.log(value)}>
+    <Select
+      value={value ? 'yes' : 'no'}
+      onValueChange={(v) => onValueChange(v === 'yes')}
+    >
       <SelectTrigger className="h-7 w-20 shrink-0 overflow-hidden p-1 pl-1.5 [&>svg]:shrink-0">
         <SelectValue placeholder="Operator" />
       </SelectTrigger>
@@ -323,7 +340,7 @@ const NegationSelect: FC = () => {
             </span>
           </div>
         </SelectItem>
-        <SelectItem value="yes" disabled>
+        <SelectItem value="yes" disabled={!ENABLE_NEGATION_OPERATION}>
           <div className="flex flex-nowrap items-center overflow-hidden">
             <span className="flex-1 overflow-hidden overflow-ellipsis text-nowrap text-xs">
               Exclude

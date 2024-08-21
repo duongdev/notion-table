@@ -1,5 +1,6 @@
 'use client'
 
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
   Popover,
   PopoverContent,
@@ -8,11 +9,16 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 import { useDataTableStore } from '@/stores/data-table-provider'
-import { MixerVerticalIcon, TrashIcon } from '@radix-ui/react-icons'
+import {
+  ExclamationTriangleIcon,
+  MixerVerticalIcon,
+  TrashIcon,
+} from '@radix-ui/react-icons'
 import { type FC, useCallback, useState } from 'react'
 import { Button } from '../../ui/button'
 import { FilterEditor } from './filter-editor'
-import { isBaseFilter } from './helpers'
+import { buildNotionFilter, isBaseFilter } from './helpers'
+import type { CompoundFilter } from './types'
 
 export type DataTableFiltersProps = {
   maxDepth?: number
@@ -78,8 +84,31 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
           disabled={baseFilterLength === 0}
           onDelete={handleClearFilters}
         />
+        <FilterError />
       </PopoverContent>
     </Popover>
+  )
+}
+
+const FilterError: FC = () => {
+  const filters = useDataTableStore((state) => state.filters)
+  const notionFilter = buildNotionFilter(
+    filters,
+    null,
+    (filters.root as CompoundFilter).isNegated,
+  )
+
+  if (!notionFilter.error) {
+    return null
+  }
+
+  return (
+    <Alert variant="destructive" className="px-2 py-2">
+      <AlertDescription className="flex gap-2 text-xs">
+        <ExclamationTriangleIcon className="h-4 w-4" />
+        {notionFilter.error}
+      </AlertDescription>
+    </Alert>
   )
 }
 

@@ -3,6 +3,9 @@ export const MAX_FILTER_DEPTH = parseInt(
   10,
 )
 
+export const ENABLE_NEGATION_OPERATION =
+  process.env.NEXT_PUBLIC_ENABLE_NEGATION === 'true'
+
 const NO_NEGATION = null
 
 export const VALUE_TYPE = {

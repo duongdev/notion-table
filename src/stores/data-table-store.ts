@@ -3,6 +3,7 @@ import {
   buildNotionFilter,
   getDefaultOperator,
   getFilterValueType,
+  isCompoundFilter,
   isPropertyTypeSupported,
 } from '@/components/data-table-toolbar/data-table-filters/helpers'
 import type {
@@ -46,6 +47,7 @@ export interface DataTableActions {
     propertyName: string,
   ) => { name: string; color?: string }[]
   updateCompoundFilterOperator: (filterId: string, operator: string) => void
+  updateCompoundFilterNegation: (filterId: string, isNegated: boolean) => void
   addCompoundFilter: (parentId: FilterId) => void
   deleteFilter: (filterId: FilterId) => void
   clearFilters: () => void
@@ -84,9 +86,19 @@ export const createDataTableStore = (entities: DataTableItems[]) => {
         set((state) => ({ ...state, isFetching: true }))
 
         try {
+          const filter = buildNotionFilter(
+            get().filters,
+            null,
+            (get().filters.root as CompoundFilter).isNegated,
+          )
+
+          if (filter.error) {
+            throw new Error(filter.error)
+          }
+
           const entities = await queryNotionDatabase({
             sorts: get().sorts,
-            filter: buildNotionFilter(get().filters),
+            filter,
           })
 
           set((state) => ({
@@ -135,13 +147,21 @@ export const createDataTableStore = (entities: DataTableItems[]) => {
           return
         }
 
+        const operator = getDefaultOperator(propertyType as FilterType)
+        const value = getFilterValueType(
+          filter.type as keyof typeof FILTER_CONFIG,
+          operator,
+        )
+          ? true
+          : ''
+
         return set((state) => {
           state.filters[filterId] = {
             ...filter,
             property: propertyName,
             type: propertyType,
-            operator: getDefaultOperator(propertyType as FilterType),
-            value: '',
+            operator,
+            value,
           }
         })
       },
@@ -255,6 +275,21 @@ export const createDataTableStore = (entities: DataTableItems[]) => {
 
         set((state) => {
           state.filters[filterId].operator = operator
+        })
+      },
+
+      updateCompoundFilterNegation: (filterId, isNegated) => {
+        set((state) => {
+          if (
+            !(
+              state.filters[filterId] &&
+              isCompoundFilter(state.filters[filterId])
+            )
+          ) {
+            return
+          }
+
+          state.filters[filterId].isNegated = isNegated
         })
       },
 

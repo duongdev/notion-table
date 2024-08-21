@@ -4,6 +4,7 @@ import type {
   BaseFilter,
   CompoundFilter,
   Filter,
+  FilterType,
   FilterValueType,
 } from './types'
 
@@ -32,34 +33,74 @@ export function isCompoundFilter(filter: Filter): filter is CompoundFilter {
   return !isBaseFilter(filter)
 }
 
+function getNegatedOperator(filterType: FilterType, operator: string) {
+  return (
+    ((FILTER_CONFIG[filterType] as ANY).operators[operator]
+      .negation as string) || null
+  )
+}
+
+function getNegatedCompoundOperator(operator: 'and' | 'or') {
+  return operator === 'and' ? 'or' : 'and'
+}
+
 export function buildNotionFilter(
   filters: Record<string, Filter>,
   parentId: string | null = null,
+  isNegated = false,
 ): ANY {
   const childFilters = Object.values(filters).filter(
     (filter) => filter.parentId === parentId,
   )
 
-  const childLevels = childFilters.map((filter) => {
-    if (isBaseFilter(filter)) {
-      return {
-        property: filter.property,
-        [filter.type]: {
-          [filter.operator]: filter.value,
-        },
+  try {
+    const childLevels = childFilters.map((filter) => {
+      if (isBaseFilter(filter)) {
+        const operator = isNegated
+          ? getNegatedOperator(filter.type as FilterType, filter.operator)
+          : filter.operator
+
+        if (!operator) {
+          throw new Error(
+            `Operator negation not found for filter type: ${filter.type} and operator: ${filter.operator}`,
+          )
+        }
+
+        return {
+          property: filter.property,
+          [filter.type]: {
+            [operator]: filter.value,
+          },
+        }
       }
+
+      const compoundFilter = filter as CompoundFilter
+      const compoundOperator = isNegated
+        ? getNegatedCompoundOperator(compoundFilter.operator)
+        : compoundFilter.operator
+
+      return {
+        [compoundOperator]: buildNotionFilter(
+          filters,
+          compoundFilter.id,
+          !parentId
+            ? compoundFilter.isNegated
+            : isNegated
+              ? !compoundFilter.isNegated
+              : compoundFilter.isNegated,
+        ),
+      }
+    })
+
+    if (!parentId) {
+      return childLevels[0]
     }
 
-    const compoundFilter = filter as CompoundFilter
-
-    return {
-      [compoundFilter.operator]: buildNotionFilter(filters, compoundFilter.id),
+    return childLevels
+  } catch (error) {
+    if (!parentId) {
+      return { error: (error as Error).message }
     }
-  })
-
-  if (!parentId) {
-    return childLevels[0]
+    throw error
   }
-
-  return childLevels
 }
