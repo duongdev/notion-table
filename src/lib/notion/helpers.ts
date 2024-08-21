@@ -10,5 +10,5 @@ export function getNotionProperties(
       : acc
   }, items[0])
 
-  return mostPropertiesItem.properties
+  return mostPropertiesItem?.properties || {}
 }

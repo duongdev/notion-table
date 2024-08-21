@@ -1,4 +1,3 @@
-import { DataTableToolbar } from '@/components/data-table-toolbar/data-table-toolbar'
 import { NotionDataTable } from '@/components/notion-data-table/notion-data-table'
 import { ArrowTopRightIcon } from '@radix-ui/react-icons'
 import type { FC } from 'react'
@@ -10,9 +9,6 @@ const Page: FC<PageProps> = () => {
     <div className="space-y-4 pb-8">
       <div className="px-4 text-2xl sm:px-8 md:px-24">
         Genshin Impact Characters
-      </div>
-      <div className="px-4 sm:px-8 md:px-24">
-        <DataTableToolbar />
       </div>
       <NotionDataTable />
       <div className="text-center">
