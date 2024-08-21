@@ -51,6 +51,7 @@ export const DataTableSorts: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const fetchNotionData = useDataTableStore((state) => state.fetchNotionData)
   const sorts = useDataTableStore(useShallow((state) => state.sorts))
+  const setSorts = useDataTableStore((state) => state.setSorts)
   const isFetching = useDataTableStore((state) => state.isFetching)
 
   const handleOpenChange = useCallback(
@@ -62,6 +63,12 @@ export const DataTableSorts: FC = () => {
     },
     [fetchNotionData],
   )
+
+  const handleDeleteSorts = useCallback(() => {
+    setIsOpen(false)
+    setSorts([])
+    fetchNotionData()
+  }, [fetchNotionData, setSorts])
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -90,7 +97,10 @@ export const DataTableSorts: FC = () => {
       <PopoverContent side="bottom" align="start" className="w-80 p-1">
         <SortList className="my-1 flex-1" />
         <AddSort />
-        <DeleteSort />
+        <DeleteSort
+          disabled={sorts.length === 0}
+          onDelete={handleDeleteSorts}
+        />
       </PopoverContent>
     </Popover>
   )
@@ -152,14 +162,15 @@ const AddSort: FC = () => {
   )
 }
 
-const DeleteSort: FC = () => {
-  const sorts = useDataTableStore(useShallow((state) => state.sorts))
-  const setSorts = useDataTableStore((state) => state.setSorts)
+const DeleteSort: FC<{
+  disabled?: boolean
+  onDelete: () => void
+}> = ({ disabled, onDelete }) => {
   const [isConfirming, setIsConfirming] = useState(false)
 
   const handleClick = () => {
     if (isConfirming) {
-      setSorts([])
+      onDelete()
       setIsConfirming(false)
     } else {
       setIsConfirming(true)
@@ -171,7 +182,7 @@ const DeleteSort: FC = () => {
       size="sm"
       variant="ghost"
       className="h-7 w-full justify-start px-2 text-muted-foreground hover:text-destructive"
-      disabled={sorts.length === 0}
+      disabled={disabled}
       onClick={handleClick}
       onMouseLeave={() => setIsConfirming(false)}
     >

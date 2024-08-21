@@ -291,7 +291,7 @@ const AddFilterMenu: FC<{ parentId: FilterId; depth: number }> = ({
           <PlusIcon className="mr-2 size-4" /> Add filter rule
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={depth >= MAX_FILTER_DEPTH}
+          disabled={depth >= MAX_FILTER_DEPTH + 1}
           onClick={() => addCompoundFilter(parentId)}
         >
           <span className="flex items-start">
@@ -412,7 +412,7 @@ const BaseFilterValueInput: FC<{
           <Button
             variant={'outline'}
             className={cn(
-              'h-7 w-[268px] justify-start text-left font-normal text-xs',
+              'h-7 w-auto justify-start text-left font-normal text-xs',
               !date && 'text-muted-foreground',
             )}
           >

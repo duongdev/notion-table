@@ -25,6 +25,7 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
   const baseFilterLength = useDataTableStore(
     (state) => Object.values(state.filters).filter(isBaseFilter).length,
   )
+  const clearFilters = useDataTableStore((state) => state.clearFilters)
   const handleOpenChange = useCallback(
     (open: boolean) => {
       setIsOpen(open)
@@ -34,6 +35,12 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
     },
     [fetchNotionData],
   )
+
+  const handleClearFilters = () => {
+    setIsOpen(false)
+    clearFilters()
+    fetchNotionData()
+  }
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -63,12 +70,15 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
       <PopoverContent
         side="bottom"
         align="start"
-        className="w-[700px] max-w-screen-md p-1"
+        className="w-auto min-w-[800px] max-w-screen-md p-1"
       >
         <FilterEditor parentFilter={null} />
         {/* <AddFilterMenu /> */}
         <Separator className="my-0.5" />
-        <DeleteFilters baseFilterLength={baseFilterLength} />
+        <DeleteFilters
+          disabled={baseFilterLength === 0}
+          onDelete={handleClearFilters}
+        />
         {/* <SortList className="my-1 flex-1" />
         <AddSort />
         <DeleteSort /> */}
@@ -77,15 +87,15 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
   )
 }
 
-const DeleteFilters: FC<{ baseFilterLength: number }> = ({
-  baseFilterLength,
+const DeleteFilters: FC<{ disabled?: boolean; onDelete: () => void }> = ({
+  onDelete,
+  disabled,
 }) => {
-  const clearFilters = useDataTableStore((state) => state.clearFilters)
   const [isConfirming, setIsConfirming] = useState(false)
 
   const handleClick = () => {
     if (isConfirming) {
-      clearFilters()
+      onDelete()
       setIsConfirming(false)
     } else {
       setIsConfirming(true)
@@ -97,7 +107,7 @@ const DeleteFilters: FC<{ baseFilterLength: number }> = ({
       size="sm"
       variant="ghost"
       className="h-7 w-full justify-start px-2 text-muted-foreground hover:text-destructive"
-      disabled={baseFilterLength === 0}
+      disabled={disabled}
       onClick={handleClick}
       onMouseLeave={() => setIsConfirming(false)}
     >
