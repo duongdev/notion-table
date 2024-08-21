@@ -3,16 +3,19 @@
 import type { DataTableProperties } from '@/lib/notion/types'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import type { FC } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { Spinner } from '../ui/spinner'
 import { DataTable } from './data-table'
 
 export type NotionDataTableProps = {}
 
 export const NotionDataTable: FC<NotionDataTableProps> = () => {
-  const { isLoaded, entities } = useDataTableStore((state) => ({
-    isLoaded: state.isLoaded,
-    entities: state.entities,
-  }))
+  const { isLoaded, entities } = useDataTableStore(
+    useShallow((state) => ({
+      isLoaded: state.isLoaded,
+      entities: state.entities,
+    })),
+  )
 
   if (!isLoaded) {
     return (

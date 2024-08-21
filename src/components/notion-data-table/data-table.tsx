@@ -39,6 +39,7 @@ import {
   useMemo,
   useState,
 } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { ScrollArea, ScrollBar } from '../ui/scroll-area'
 import {
   Table,
@@ -57,7 +58,7 @@ export type DataTableProps = {
 }
 
 export const DataTable: FC<DataTableProps> = ({ data }) => {
-  const properties = useDataTableStore((state) => state.properties)
+  const properties = useDataTableStore(useShallow((state) => state.properties))
 
   const columns = getTableColumns(properties)
   const [columnOrder, setColumnOrder] = useState<string[]>(() =>

@@ -1,5 +1,6 @@
 'use client'
 
+import { cn } from '@/lib/utils'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import {
   DndContext,
@@ -25,8 +26,8 @@ import {
   PlusIcon,
   TrashIcon,
 } from '@radix-ui/react-icons'
-import clsx from 'clsx'
 import { type FC, useCallback, useMemo, useState } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { PropertyIcon } from '../notion-data-table/property-icon'
 import { Button } from '../ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover'
@@ -44,19 +45,23 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip'
+import { PropertySelect } from './property-select'
 
 export const DataTableSorts: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
   const fetchNotionData = useDataTableStore((state) => state.fetchNotionData)
-  const sorts = useDataTableStore((state) => state.sorts)
+  const sorts = useDataTableStore(useShallow((state) => state.sorts))
   const isFetching = useDataTableStore((state) => state.isFetching)
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open)
-    if (!open) {
-      fetchNotionData()
-    }
-  }
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setIsOpen(open)
+      if (!open) {
+        fetchNotionData()
+      }
+    },
+    [fetchNotionData],
+  )
 
   return (
     <Popover open={isOpen} onOpenChange={handleOpenChange}>
@@ -65,7 +70,7 @@ export const DataTableSorts: FC = () => {
           disabled={isFetching}
           variant="ghost"
           size="sm"
-          className={clsx(
+          className={cn(
             'px-1.5 py-1 text-muted-foreground hover:text-foreground',
             'border border-dashed',
             sorts.length > 0 && 'text-foreground',
@@ -93,11 +98,13 @@ export const DataTableSorts: FC = () => {
 
 const AddSort: FC = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const { properties, sorts, setSorts } = useDataTableStore((state) => ({
-    properties: state.properties,
-    sorts: state.sorts,
-    setSorts: state.setSorts,
-  }))
+  const { properties, sorts, setSorts } = useDataTableStore(
+    useShallow((state) => ({
+      properties: state.properties,
+      sorts: state.sorts,
+      setSorts: state.setSorts,
+    })),
+  )
 
   const sortables = useMemo(() => {
     return Object.entries(properties)
@@ -146,7 +153,7 @@ const AddSort: FC = () => {
 }
 
 const DeleteSort: FC = () => {
-  const sorts = useDataTableStore((state) => state.sorts)
+  const sorts = useDataTableStore(useShallow((state) => state.sorts))
   const setSorts = useDataTableStore((state) => state.setSorts)
   const [isConfirming, setIsConfirming] = useState(false)
 
@@ -175,11 +182,9 @@ const DeleteSort: FC = () => {
 }
 
 const SortList: FC<{ className?: string }> = ({ className }) => {
+  const setSorts = useDataTableStore((state) => state.setSorts)
   // biome-ignore lint/style/useNamingConvention: <explanation>
-  const { sorts: _sorts, setSorts } = useDataTableStore((state) => ({
-    sorts: state.sorts,
-    setSorts: state.setSorts,
-  }))
+  const _sorts = useDataTableStore(useShallow((state) => state.sorts))
 
   const sorts = useMemo(
     () => _sorts.map((s) => ({ id: s.property, ...s })),
@@ -238,6 +243,7 @@ const SortList: FC<{ className?: string }> = ({ className }) => {
 
   return (
     <DndContext
+      id="sorts_dnd"
       sensors={sensors}
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
@@ -247,7 +253,7 @@ const SortList: FC<{ className?: string }> = ({ className }) => {
           items={sorts.map((s) => ({ ...s, id: s.property }))}
           strategy={verticalListSortingStrategy}
         >
-          <div className={clsx('flex flex-col gap-1', className)}>
+          <div className={cn('flex flex-col gap-1', className)}>
             {sorts.map((sort, index) => (
               <SortItem
                 key={sort.property}
@@ -309,31 +315,14 @@ const SortItem: FC<{
       >
         <DragHandleDots2Icon />
       </Button>
-      <Select
+      <PropertySelect
         value={property}
         onValueChange={(value) => {
           onChange({ property: value, direction })
         }}
-      >
-        <SelectTrigger className="h-7 w-[180px] flex-1 overflow-hidden p-1 pl-1.5 [&>svg]:shrink-0">
-          <SelectValue placeholder="Property" />
-        </SelectTrigger>
-        <SelectContent>
-          {sortables.map(({ key, type }) => (
-            <SelectItem key={key} value={key}>
-              <div className="flex max-w-60 flex-nowrap items-center overflow-hidden">
-                <PropertyIcon
-                  type={type}
-                  className="mr-1.5 size-4 text-muted-foreground"
-                />
-                <span className="flex-1 overflow-hidden overflow-ellipsis text-nowrap text-xs">
-                  {key}
-                </span>
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        properties={sortables}
+        className="w-[180px] flex-1"
+      />
       <Select
         value={direction}
         onValueChange={(value) => {
