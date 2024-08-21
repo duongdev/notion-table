@@ -1,4 +1,10 @@
 import type { FILTER_CONFIG } from '@/components/data-table-toolbar/data-table-filters/filter-config'
+import {
+  buildNotionFilter,
+  getDefaultOperator,
+  getFilterValueType,
+  isPropertyTypeSupported,
+} from '@/components/data-table-toolbar/data-table-filters/helpers'
 import type {
   BaseFilter,
   CompoundFilter,
@@ -6,12 +12,6 @@ import type {
   FilterId,
   FilterType,
 } from '@/components/data-table-toolbar/data-table-filters/types'
-import {
-  buildNotionFilter,
-  getDefaultOperator,
-  getFilterValueType,
-  isPropertyTypeSupported,
-} from '@/components/data-table-toolbar/data-table-filters/utils'
 import { queryNotionDatabase } from '@/lib/notion/client'
 import { getNotionProperties } from '@/lib/notion/helpers'
 import type { DataTableItems, DataTableProperties } from '@/lib/notion/types'

@@ -1,6 +1,6 @@
 'use client'
 
-import { buildNotionFilter } from '@/components/data-table-toolbar/data-table-filters/utils'
+import { buildNotionFilter } from '@/components/data-table-toolbar/data-table-filters/helpers'
 import { useDataTableStore } from '@/stores/data-table-provider'
 import type { FC } from 'react'
 

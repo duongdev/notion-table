@@ -46,6 +46,7 @@ import {
   FILTER_CONFIG,
   MAX_FILTER_DEPTH,
 } from './filter-config'
+import { getFilterValueType, isBaseFilter } from './helpers'
 import type {
   BaseFilter,
   CompoundFilter,
@@ -54,7 +55,6 @@ import type {
   FilterType,
   FilterValueType,
 } from './types'
-import { getFilterValueType, isBaseFilter } from './utils'
 
 export type FilterEditorProps = {
   parentFilter: Filter | null

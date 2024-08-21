@@ -12,7 +12,7 @@ import { MixerVerticalIcon, TrashIcon } from '@radix-ui/react-icons'
 import { type FC, useCallback, useState } from 'react'
 import { Button } from '../../ui/button'
 import { FilterEditor } from './filter-editor'
-import { isBaseFilter } from './utils'
+import { isBaseFilter } from './helpers'
 
 export type DataTableFiltersProps = {
   maxDepth?: number
@@ -73,15 +73,11 @@ export const DataTableFilters: FC<DataTableFiltersProps> = () => {
         className="w-auto min-w-[800px] max-w-screen-md p-1"
       >
         <FilterEditor parentFilter={null} />
-        {/* <AddFilterMenu /> */}
         <Separator className="my-0.5" />
         <DeleteFilters
           disabled={baseFilterLength === 0}
           onDelete={handleClearFilters}
         />
-        {/* <SortList className="my-1 flex-1" />
-        <AddSort />
-        <DeleteSort /> */}
       </PopoverContent>
     </Popover>
   )
