@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 👋
 
-## Getting Started
+This project is for research and educational purpose. The project is a web application that displays a table view of a Notion database and allows users to sort and filter the database using the Notion API.
 
-First, run the development server:
+![image](https://github.com/user-attachments/assets/379ab7b3-24f9-4cce-a54e-e2710517b86a)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Tech stack 🛠
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- [Next.js](https://nextjs.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Notion API](https://developers.notion.com/)
+- [React Table](https://react-table.tanstack.com/)
+- [Zustand](https://zustand.surge.sh/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Docker](https://www.docker.com/)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick start 🚀
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+1. **Clone the repository.**
 
-## Learn More
+   ```shell
+   git clone
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Configure the environment variables.**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Create a `.env` file in the root of the project and add the following environment variables:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+   ```shell
+   NOTION_SECRET=<your-notion-secret>
+   NOTION_DB_ID=<your-notion-db-id>
+   NEXT_PUBLIC_MAX_FILTER_DEPTH=2
+   NEXT_PUBLIC_ENABLE_NEGATION=true
+   ```
 
-## Deploy on Vercel
+3. **Install dependencies.**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   ```shell
+   npm install
+   ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+4. **Start the development server.**
+
+   ```shell
+    npm run dev
+   ```
+
+5. **Open the source code and start editing!**
+
+   Your site is now running at `http://localhost:3000`!
+
+## Running with Docker 🐳
+
+1. **Build the Docker image.**
+
+   ```shell
+   docker build -t notion-table-view .
+   ```
+
+2. **Run the Docker container.**
+
+   ```shell
+    docker run -p 3000:3000 notion-table-view
+   ```
+
+3. **Open the source code and start editing!**
+
+   Your site is now running at `http://localhost:3000`!
+
+## Key features ⭐
+
+- [x] Build a table view UI for Notion databases
+
+  - [x] Implement a basic table view given a Notion database as input.
+  - [x] Support sorting.
+  - [x] Support rearrangement and resizing of columns - expected behavior:
+    - [x] Click and hold the column headings to drag them left or right.
+    - [x] Resize columns by hovering over their edges, and dragging right or left.
+
+- [x] Build a Notion filter UI for supporting database filters.
+
+  - [x] Support the property types `checkbox , date , multi_select , number , rich_text ,
+select , timestamp , status`.
+  - [x] Support Compound filters with filter groups.
+  - [x] The Notion API doc notes that it only supports two levels of nesting on compound filter conditions. Implement the filters such that the restriction on the levels of nesting is configurable e.g. could be increased to 3, 4, or more.
+  - [ ] Implement unit tests for the Compound filters
+
+- [x] Implement the NOT operator for compound filter conditions. Support compound filter conditions that contain only filter operators where the Notion API offers the logical negation e.g. `!(   )` is `is_not_empty` , `!( less_than )` is `greater_than_or_equal_to`
+  - [x] For the filter conditions where Notion does not offer the logical negation, implement validation logic that prompts the user that the NOT operator is unsupported with the given compound filter conditions.
+  - [x] For example: `!(( datePropertyX is after “2023-01-01” AND textPropertyY ends with “.com”) OR textPropertyZ starts with “www.”)` should indicate “Unsupported conditions for `NOT: ends with , starts with`
+  - [ ] Include unit test cases for the NOT operator logic
