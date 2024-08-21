@@ -50,6 +50,36 @@ This project is for research and educational purpose. The project is a web appli
 
    Your site is now running at `http://localhost:3000`!
 
+## Running with Docker 🐳
+
+1. **Update `next.config.mjs` file.**
+
+   ```diff
+   /** @type {import('next').NextConfig} */
+   const nextConfig = {
+      transpilePackages: ["geist"],
+   +  output: "standalone",
+   };
+
+   export default nextConfig;
+   ```
+
+2. **Build the Docker image.**
+
+   ```shell
+   docker build -t notion-table-view .
+   ```
+
+3. **Run the Docker container.**
+
+   ```shell
+    docker run -p 3000:3000 notion-table-view
+   ```
+
+4. **Open the source code and start editing!**
+
+   Your site is now running at `http://localhost:3000`!
+
 ## Key features ⭐
 
 - [x] Build a table view UI for Notion databases

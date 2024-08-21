@@ -18,7 +18,7 @@ const Page: FC<PageProps> = () => {
           target="_blank"
           className="inline-flex items-center border-muted border-b border-dashed text-muted-foreground text-xs transition-colors hover:border-foreground hover:text-foreground"
         >
-          Source: Kaggle
+          Dataset source: Kaggle
           <ArrowTopRightIcon className="ml-1 size-3" />
         </a>
       </div>
